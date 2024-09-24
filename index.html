@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Socket.IO chat</title>
+    <style>
+        body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+        #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+        #input:focus { outline: none; }
+        #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages > li { padding: 0.5rem 1rem; }
+        #messages > li:nth-child(odd) { background: #efefef; }
+    </style>
+</head>
+<body>
+<ul id="messages"></ul>
+<form id="form" action="">
+    <input id="input" autocomplete="off" /><button>Send</button>
+    <button id="toggle-btn">Disconnect</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // 만약 특정 폴더를 경로로 지정할 경우 io의 경로를 지정해줘야 함
+    const socket = io({
+        // 추가 옵션
+        // ackTimeout: 10000,
+        // retries: 3,
+    })
+
+    const form = document.getElementById('form')
+    const input = document.getElementById('input')
+    const messages = document.getElementById('messages')
+
+    // 임의 연결 해제 토글
+    const toggleButton = document.getElementById('toggle-btn');
+    toggleButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (socket.connected) {
+            toggleButton.innerText = 'Connect';
+            socket.disconnect();
+        } else {
+            toggleButton.innerText = 'Disconnect';
+            socket.connect();
+        }
+    });
+
+    // form 제출시 client에서 서버로 메시지 전송
+    form.addEventListener('submit', e => {
+        e.preventDefault()
+        if (input.value) {
+            socket.emit('chat message', input.value)
+
+            // 아래와 같이 보내면 서버에서 매개변수를 통해 여러개의 데이터를 받을 수 있음
+            // socket.emit('chat message', input.value, 'test1', 'test2')
+            input.value = ''
+        }
+    })
+
+    // 서버에서 client로 전송한 메시지를 받아서 화면에 출력
+    socket.on('chat message', (message, callback) => {
+        const item = document.createElement('li')
+        item.textContent = message
+        messages.appendChild(item)
+        window.scrollTo(0, document.body.scrollHeight)
+        callback({
+            status: 'ok'
+        })
+    })
+
+</script>
+</body>
+</html>
